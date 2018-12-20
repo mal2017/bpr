@@ -1,0 +1,11 @@
+[package]
+name = "bpr"
+version = "0.1.0"
+authors = ["Matt Lawlor <matt.a.lawlor@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+clap = {version = "~2.32.0", features = ["yaml"]}
+rust-htslib = "0.22.0"
+quick-error="1.2.2"
+regex = "1"
