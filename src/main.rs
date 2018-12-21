@@ -16,11 +16,12 @@ fn main() {
                                .required(true)
                                .index(1)
 						   	   .validator(bam_seems_ok))
+                               .validator(bam_is_name_sorted))
                           .arg(Arg::with_name("basename")
                                .help("basename for output bams")
                                .required(true)
                                .index(2)
-							   .validator(dir_exists))
+							   .validator(dir_exists)
 					      .arg(Arg::with_name("single_end")
 					  		    .long("single-end"))
                           .arg(Arg::with_name("threads")
@@ -38,6 +39,12 @@ fn main() {
     run();
 
 }
+
+// actually run
+fn run() {
+    println!("running");
+}
+
 
 // Checks that the output bam path is writeable.
 fn dir_exists(a: String) -> Result<(), String> {
@@ -65,7 +72,15 @@ fn bam_seems_ok(a: String) -> Result<(), String> {
 }
 
 
-// actually run
-fn run() {
-    println!("running");
+// Checks that the input bam seems to exist.
+fn bam_is_name_sorted(a: String) -> Result<(), String> {
+    let p = Path::new(&a);
+
+    match p.is_file() {
+        true => match p.extension().unwrap().to_str().unwrap() == "bam" {
+            true => Ok(()),
+            false => Err(String::from("Input bam does not appear to be a bam.")),
+        },
+        false => Err(String::from("Input bam doesn't seem to exist.")),
+    }
 }
