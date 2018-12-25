@@ -4,11 +4,13 @@ extern crate mbulib;
 extern crate rust_htslib;
 #[macro_use]
 extern crate quick_error;
+extern crate itertools;
 
 use clap::{App, Arg, ArgGroup};
 use regex::Regex;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
+use itertools::Itertools;
 
 fn main() {
     let matches = App::new("bpr")
@@ -56,27 +58,36 @@ fn run(b: &str, o: &str, p: usize) {
     let bampath = Path::new(b);
     let opaths = make_output_names(o);
 
-    //let mut bam = Reader::from_path(bampath).unwrap();
+    let mut bam = Reader::from_path(bampath).unwrap();
+
+
+    println!("{:?}", opaths);
     //let header = mbulib::bam::header::edit_hdr_srt_tag(bam.header(), "queryname");
 
     //let mut obam = Writer::from_path(opath, &header).unwrap();
 
     //obam.set_threads(p);
 
-    println!("{:?}", opaths);
 
-    /*
-    bam.records()
-       .into_iter()
-       .name_sort()
-       .map(|a| obam.write(&a).unwrap())
-       .for_each(drop);
-     */
+
+    let rec_it = bam.records()
+       .map(|a| a.unwrap())
+       .group_by(|a| String::from_utf8(a.qname().to_vec()).unwrap());
+
+     for (x,y) in rec_it.into_iter() {
+    //     let z: Vec<Record> = y.collect();
+         //println!("{:?}", z);
+     }
+
+
 }
 
 // TODO this function is horrible
 fn make_output_names(a: &str) -> Result<Vec<String>, FilenameGenerationError> {
-    let basename = match Path::new(a).file_stem() {
+    let basepath = Path::new(a);
+
+    let dir = basepath.parent().unwrap();
+    let basename = match basepath.file_stem() {
         Some(b) => b.to_str().unwrap().to_owned(),
         None => return Err(FilenameGenerationError::NoneSuchFileStem),
     };
@@ -87,6 +98,7 @@ fn make_output_names(a: &str) -> Result<Vec<String>, FilenameGenerationError> {
         .map(|a| Path::new(&a).to_owned())
         .zip(exts.iter())
         .map(|(a, b)| a.with_extension(b))
+        .map(|a| dir.join(a))
         .map(|a| a.to_str().unwrap().to_owned())
         .collect();
     Ok(filenames)

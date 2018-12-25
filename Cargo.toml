@@ -10,3 +10,4 @@ rust-htslib = "0.22.0"
 quick-error="1.2.2"
 regex = "1"
 mbulib = {git = "https://github.com/mal2017/mbulib.git",branch="master"}
+itertools = "*"
