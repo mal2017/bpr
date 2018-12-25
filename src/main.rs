@@ -62,18 +62,19 @@ fn run(b: &str, o: &str, p: usize) {
     let opaths = make_output_names(o).unwrap();
 
     let mut bam = Reader::from_path(bampath).unwrap();
+    bam.set_threads(p);
 
+    // Random number generation.
     let mut rng = thread_rng();
+
+    // Distribution of possible outbams.
     let dist = Uniform::new(0usize, 3);
 
-    println!("{:?}", opaths);
-    //let header = mbulib::bam::header::edit_hdr_srt_tag(bam.header(), "queryname");
+    let header = mbulib::bam::header::edit_hdr_srt_tag(bam.header(), "unknown");
 
-    //let mut obam = Writer::from_path(opath, &header).unwrap();
-
-    //obam.set_threads(p);
-
-
+    let mut obams: Vec<Writer> = opaths.into_iter()
+                      .map(|a| Writer::from_path(a, &header).unwrap())
+                      .collect();
 
     let rec_it = bam.records()
        .map(|a| a.unwrap())
@@ -84,10 +85,9 @@ fn run(b: &str, o: &str, p: usize) {
      for (x,y) in rec_it.into_iter() {
          bucket = rng.sample(dist);
 
-         println!("{:?}", opaths[bucket]);
-
-    //     let z: Vec<Record> = y.collect();
-         //println!("{:?}", z);
+         y.into_iter()
+          .map(|a| obams[bucket].write(&a).unwrap())
+          .for_each(drop);
      }
 
 
