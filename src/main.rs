@@ -5,6 +5,7 @@ extern crate rust_htslib;
 #[macro_use]
 extern crate quick_error;
 extern crate itertools;
+extern crate rand;
 
 use clap::{App, Arg, ArgGroup};
 use regex::Regex;
@@ -54,12 +55,16 @@ fn run(b: &str, o: &str, p: usize) {
     use mbulib::bam::header::*;
     use mbulib::bam::sort::*;
     use rust_htslib::bam::*;
+    use rand::{thread_rng, Rng};
+    use rand::distributions::Uniform;
 
     let bampath = Path::new(b);
-    let opaths = make_output_names(o);
+    let opaths = make_output_names(o).unwrap();
 
     let mut bam = Reader::from_path(bampath).unwrap();
 
+    let mut rng = thread_rng();
+    let dist = Uniform::new(0usize, 3);
 
     println!("{:?}", opaths);
     //let header = mbulib::bam::header::edit_hdr_srt_tag(bam.header(), "queryname");
@@ -74,7 +79,13 @@ fn run(b: &str, o: &str, p: usize) {
        .map(|a| a.unwrap())
        .group_by(|a| String::from_utf8(a.qname().to_vec()).unwrap());
 
+     let mut bucket;
+
      for (x,y) in rec_it.into_iter() {
+         bucket = rng.sample(dist);
+
+         println!("{:?}", opaths[bucket]);
+
     //     let z: Vec<Record> = y.collect();
          //println!("{:?}", z);
      }
