@@ -1,6 +1,5 @@
 #![forbid(unsafe_code)]
 extern crate clap;
-extern crate mbulib;
 extern crate rust_htslib;
 #[macro_use]
 extern crate quick_error;
@@ -32,7 +31,6 @@ fn main() {
                 .index(2)
                 .validator(dir_exists),
         )
-        .arg(Arg::with_name("single_end").long("single-end"))
         .arg(
             Arg::with_name("threads")
                 .help("threads to use")
@@ -45,15 +43,12 @@ fn main() {
     let bam_file: &str = matches.value_of("ibam").unwrap();
     let basename: &str = matches.value_of("basename").unwrap();
     let threads: usize = matches.value_of("threads").unwrap_or("1").parse().unwrap();
-    let single_end: bool = matches.is_present("single_end");
 
     run(bam_file, basename, threads);
 }
 
 // actually run
 fn run(b: &str, o: &str, p: usize) {
-    use mbulib::bam::header::*;
-    use mbulib::bam::sort::*;
     use rust_htslib::bam::*;
     use rand::{thread_rng, Rng};
     use rand::distributions::Uniform;
@@ -70,7 +65,8 @@ fn run(b: &str, o: &str, p: usize) {
     // Distribution of possible outbams.
     let dist = Uniform::new(0usize, 3);
 
-    let header = mbulib::bam::header::edit_hdr_srt_tag(bam.header(), "unknown");
+
+    let header = Header::from_template(bam.header());
 
     let mut obams: Vec<Writer> = opaths.into_iter()
                       .map(|a| Writer::from_path(a, &header).unwrap())
