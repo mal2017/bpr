@@ -5,12 +5,17 @@ extern crate rust_htslib;
 extern crate quick_error;
 extern crate itertools;
 extern crate rand;
+extern crate rand_xorshift;
 
 use clap::{App, Arg, ArgGroup};
 use regex::Regex;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use itertools::Itertools;
+use rust_htslib::bam::*;
+use rand::{thread_rng, Rng, SeedableRng};
+use rand::distributions::Uniform;
+
 
 fn main() {
     let matches = App::new("bpr")
@@ -32,6 +37,14 @@ fn main() {
                 .validator(dir_exists),
         )
         .arg(
+            Arg::with_name("seed")
+                .help("seed for random assignment to pseudoreplicate")
+                .required(true)
+                .short("s")
+                .long("seed")
+                .takes_value(true)
+        )
+        .arg(
             Arg::with_name("threads")
                 .help("threads to use")
                 .short("p")
@@ -40,18 +53,18 @@ fn main() {
         )
         .get_matches();
 
-    let bam_file: &str = matches.value_of("ibam").unwrap();
-    let basename: &str = matches.value_of("basename").unwrap();
-    let threads: usize = matches.value_of("threads").unwrap_or("1").parse().unwrap();
+    let bam_file: &str  = matches.value_of("ibam").unwrap();
+    let basename: &str  = matches.value_of("basename").unwrap();
+    let threads:  usize = matches.value_of("threads").unwrap_or("1").parse().unwrap();
+    let seed:     &str  = matches.value_of("seed").unwrap();
 
-    run(bam_file, basename, threads);
+    run(bam_file, basename, threads, seed);
 }
 
 // actually run
-fn run(b: &str, o: &str, p: usize) {
-    use rust_htslib::bam::*;
-    use rand::{thread_rng, Rng};
-    use rand::distributions::Uniform;
+fn run(b: &str, o: &str, p: usize, seed: &str) {
+
+    let mut seedu8: [u8; 16] = make_seed_from_str(seed);
 
     let bampath = Path::new(b);
     let opaths = make_output_names(o).unwrap();
@@ -60,7 +73,7 @@ fn run(b: &str, o: &str, p: usize) {
     bam.set_threads(p);
 
     // Random number generation.
-    let mut rng = thread_rng();
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(seedu8);
 
     // Distribution of possible outbams.
     let dist = Uniform::new(0usize, 3);
@@ -87,6 +100,19 @@ fn run(b: &str, o: &str, p: usize) {
      }
 
 
+}
+
+
+fn make_seed_from_str(seed: &str) -> [u8; 16] {
+    let bytes: Vec<u8> = seed.as_bytes()
+                             .to_owned()
+                             .into_iter()
+                             .cycle()
+                             .take(16).collect();
+
+    let mut array = [0; 16];
+    array.copy_from_slice(&bytes);
+    array
 }
 
 // TODO this function is horrible
