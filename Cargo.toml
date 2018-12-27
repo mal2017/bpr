@@ -1,6 +1,6 @@
 [package]
 name = "bpr"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Matt Lawlor <matt.a.lawlor@gmail.com>"]
 edition = "2018"
 

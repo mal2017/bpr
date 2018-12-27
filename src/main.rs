@@ -19,7 +19,7 @@ use rand::distributions::Uniform;
 
 fn main() {
     let matches = App::new("bpr")
-        .version("0.1.0")
+        .version("0.2.0")
         .author("Matt Lawlor <matt.a.lawlor@gmail.com>")
         .about("Create psuedoreplicates from bam files.")
         .arg(
@@ -76,7 +76,7 @@ fn run(b: &str, o: &str, p: usize, seed: &str) {
     let mut rng = rand_xorshift::XorShiftRng::from_seed(seedu8);
 
     // Distribution of possible outbams.
-    let dist = Uniform::new(0usize, 3);
+    let dist = Uniform::new(0usize, 2);
 
 
     let header = Header::from_template(bam.header());
@@ -125,9 +125,9 @@ fn make_output_names(a: &str) -> Result<Vec<String>, FilenameGenerationError> {
         None => return Err(FilenameGenerationError::NoneSuchFileStem),
     };
 
-    let exts = vec!["rep0.bam", "rep1.bam", "rep2.bam"];
+    let exts = vec!["rep0.bam", "rep1.bam"];
     let filenames: Vec<String> = std::iter::repeat(basename)
-        .take(3)
+        .take(2)
         .map(|a| Path::new(&a).to_owned())
         .zip(exts.iter())
         .map(|(a, b)| a.with_extension(b))
