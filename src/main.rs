@@ -19,7 +19,7 @@ use rand::distributions::Uniform;
 
 fn main() {
     let matches = App::new("bpr")
-        .version("0.2.0")
+        .version("0.2.1")
         .author("Matt Lawlor <matt.a.lawlor@gmail.com>")
         .about("Create psuedoreplicates from bam files.")
         .arg(
@@ -163,11 +163,13 @@ fn dir_exists(a: String) -> Result<(), String> {
 fn bam_seems_ok(a: String) -> Result<(), String> {
     let p = Path::new(&a);
 
+    let ext = p.extension().unwrap().to_str().unwrap();
+
     match p.is_file() {
-        true => match p.extension().unwrap().to_str().unwrap() == "bam" {
+        true => match  (ext == "bam" || ext == "cram") {
             true => Ok(()),
-            false => Err(String::from("Input bam does not appear to be a bam.")),
+            false => Err(String::from("Input bam/cram does not appear to be a bam/cram.")),
         },
-        false => Err(String::from("Input bam doesn't seem to exist.")),
+        false => Err(String::from("Input bam/cram doesn't seem to exist.")),
     }
 }
