@@ -19,7 +19,7 @@ use rand::distributions::Uniform;
 
 fn main() {
     let matches = App::new("bpr")
-        .version("0.2.1")
+        .version("0.3.0a")
         .author("Matt Lawlor <matt.a.lawlor@gmail.com>")
         .about("Create psuedoreplicates from bam files.")
         .arg(
@@ -35,6 +35,13 @@ fn main() {
                 .required(true)
                 .index(2)
                 .validator(dir_exists),
+        )
+        .arg(
+            Arg::with_name("n_reps")
+                .help("number of replicates to produce")
+                .short("n")
+                .long("n-pseudoreps")
+                .takes_value(true)
         )
         .arg(
             Arg::with_name("seed")
@@ -57,17 +64,18 @@ fn main() {
     let basename: &str  = matches.value_of("basename").unwrap();
     let threads:  usize = matches.value_of("threads").unwrap_or("1").parse().unwrap();
     let seed:     &str  = matches.value_of("seed").unwrap();
+    let n_reps:   usize  = matches.value_of("n_reps").unwrap_or("1").parse().unwrap();
 
-    run(bam_file, basename, threads, seed);
+    run(bam_file, basename, threads, seed, n_reps);
 }
 
 // actually run
-fn run(b: &str, o: &str, p: usize, seed: &str) {
+fn run(b: &str, o: &str, p: usize, seed: &str, n: usize) {
 
     let mut seedu8: [u8; 16] = make_seed_from_str(seed);
 
     let bampath = Path::new(b);
-    let opaths = make_output_names(o).unwrap();
+    let opaths = make_output_names(o, n).unwrap();
 
     let mut bam = Reader::from_path(bampath).unwrap();
     bam.set_threads(p);
@@ -76,7 +84,7 @@ fn run(b: &str, o: &str, p: usize, seed: &str) {
     let mut rng = rand_xorshift::XorShiftRng::from_seed(seedu8);
 
     // Distribution of possible outbams.
-    let dist = Uniform::new(0usize, 2);
+    let dist = Uniform::new(0usize, n);
 
 
     let header = Header::from_template(bam.header());
@@ -116,7 +124,7 @@ fn make_seed_from_str(seed: &str) -> [u8; 16] {
 }
 
 // TODO this function is horrible
-fn make_output_names(a: &str) -> Result<Vec<String>, FilenameGenerationError> {
+fn make_output_names(a: &str, n: usize) -> Result<Vec<String>, FilenameGenerationError> {
     let basepath = Path::new(a);
 
     let dir = basepath.parent().unwrap();
@@ -125,9 +133,13 @@ fn make_output_names(a: &str) -> Result<Vec<String>, FilenameGenerationError> {
         None => return Err(FilenameGenerationError::NoneSuchFileStem),
     };
 
-    let exts = vec!["rep0.bam", "rep1.bam"];
+    let dist = 0..n;
+    //let exts = vec!["rep0.bam", "rep1.bam"];
+    let exts: Vec<String> = dist.into_iter()
+                   .map(|a| format!("rep{}.bam",a)).
+                   collect();
+
     let filenames: Vec<String> = std::iter::repeat(basename)
-        .take(2)
         .map(|a| Path::new(&a).to_owned())
         .zip(exts.iter())
         .map(|(a, b)| a.with_extension(b))
